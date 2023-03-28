@@ -7,6 +7,8 @@ const errorController = require('./controllers/error');
 const sequelize = require('./util/dataBase');
 const Product = require('./models/product');
 const User = require('./models/user');
+const cart = require('./models/cart');
+const cartItem = require('./models/cart-Item');
 
 const app = express();
 
@@ -35,7 +37,14 @@ app.use(errorController.get404);
 
 Product.belongsTo(User, { constraints: true, onDelete: 'CASCADE' });
 User.hasMany(Product);
-sequelize.sync()
+User.hasOne(cart);
+cart.belongsTo(User);
+cart.belongsToMany(Product,{through:cartItem})
+Product.belongsToMany(cart, { through: cartItem })
+
+sequelize
+  // .sync({force:true})
+  .sync()
   .then(result => {
     return User.findByPk(1)
   })
@@ -44,6 +53,10 @@ sequelize.sync()
       return User.create({ name: 'user', email: 'user@gmail.com' })
     }
     return Promise.resolve(user);
+  })
+
+  .then(user => {
+    return user.createCart()
   })
   .then(user => {
     // console.log(user)
